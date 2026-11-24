@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}SI Surat Tugas Ambulance{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% if user %}
+<div class="topbar">
+  <div><b>SI Surat Tugas</b><span>RSUD Cut Nyak Dhien Meulaboh</span></div>
+  <div>{{ user['name'] }}</div>
+</div>
+<aside>
+  <div class="brand"><b>SI Surat Tugas</b><span>RSUD Cut Nyak Dhien Meulaboh</span></div>
+  <nav>
+    <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint=='dashboard' }}"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Dashboard</a>
+    <a href="{{ url_for('surat_baru') }}" class="{{ 'active' if request.endpoint in ('surat_baru','surat_edit') }}"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Buat Surat Tugas</a>
+    <a href="{{ url_for('surat_list') }}" class="{{ 'active' if request.endpoint in ('surat_list','surat_detail') }}"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg>Arsip Surat</a>
+    {% if user['role']=='admin' %}
+    <a href="{{ url_for('master', jenis='pegawai') }}" class="{{ 'active' if request.endpoint in ('master','master_nonaktif') }}"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg>Data Master</a>
+    <a href="{{ url_for('pengaturan') }}" class="{{ 'active' if request.endpoint=='pengaturan' }}"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/></svg>Pengaturan</a>
+    {% endif %}
+  </nav>
+  <div class="userbox">Login sebagai<br><b>{{ user['name'] }}</b> · {{ 'Admin' if user['role']=='admin' else 'Koordinator' }}<br>
+  <a href="{{ url_for('logout') }}">Keluar</a></div>
+</aside>
+{% endif %}
+<main>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="flash {{ 'ok' if cat=='ok' else 'error' }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+{% if user %}
+<nav class="bottomnav">
+  <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint=='dashboard' }}"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Dashboard</a>
+  <a href="{{ url_for('surat_baru') }}" class="{{ 'active' if request.endpoint=='surat_baru' }}"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Buat Surat</a>
+  <a href="{{ url_for('surat_list') }}" class="{{ 'active' if request.endpoint=='surat_list' }}"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg>Arsip</a>
+  {% if user['role']=='admin' %}
+  <a href="{{ url_for('master', jenis='pegawai') }}" class="{{ 'active' if request.endpoint=='master' }}"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg>Master</a>
+  {% endif %}
+</nav>
+{% endif %}
+{% block scripts %}{% endblock %}
+</body>
+</html>

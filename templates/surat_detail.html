@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Surat {{ surat['nomor_surat'] }} — SI Surat Tugas{% endblock %}
+{% block content %}
+<h1>Surat Tugas {{ surat['nomor_surat'] }}</h1>
+<div class="sub">Status: <span class="badge b-{{ surat['status'] }}">{{ STATUS_LABEL[surat['status']] }}</span>
+{% if surat['status']=='dibatalkan' %} · Alasan: {{ surat['alasan_batal'] }}{% endif %}</div>
+
+<div class="actions" style="margin-bottom:16px">
+  {% if surat['status']!='dibatalkan' %}
+  <a class="btn btn-blue" href="{{ url_for('surat_pdf', sid=surat['id']) }}" target="_blank">🖨️ Cetak / Unduh PDF</a>
+  {% endif %}
+  {% if surat['status']=='draft' %}
+  <a class="btn btn-ghost" href="{{ url_for('surat_edit', sid=surat['id']) }}">✏️ Edit Draft</a>
+  <form method="post" action="{{ url_for('surat_terbitkan', sid=surat['id']) }}" style="display:inline">
+    <button class="btn-primary">Terbitkan (Berangkat)</button></form>
+  {% endif %}
+</div>
+
+<section>
+  <h2>Isi Surat</h2>
+  <dl class="kv">
+    <dt>Dasar Rujukan</dt><dd>Surat Rujukan Antar Rumah Sakit tanggal {{ surat['dasar_tanggal_rujukan']|tgl_indo }}</dd>
+    <dt>Dokter yang Merujuk</dt><dd>{{ surat['dokter_nama'] }}</dd>
+    <dt>Nama Pasien</dt><dd>{{ surat['nama_pasien'] }}</dd>
+    <dt>No. KP. JKA</dt><dd>{{ surat['no_kp_jka'] }}</dd>
+    <dt>Sub / Spesialis</dt><dd>{{ surat['sub_spesialis'] }}</dd>
+    <dt>Kendaraan</dt><dd>{{ surat['kendaraan_jenis'] }} — {{ surat['kendaraan_nopol'] }}</dd>
+    <dt>Tujuan Rujukan</dt><dd>{{ surat['rs_nama'] }} ({{ surat['jarak_km']|jarak }})</dd>
+    <dt>Berangkat</dt><dd>{{ surat['berangkat_tanggal']|tgl_indo }} · Pukul {{ surat['berangkat_pukul'] or '……' }} WIB</dd>
+    <dt>Kembali</dt><dd>{% if surat['kembali_tanggal'] %}{{ surat['kembali_tanggal']|tgl_indo }} · Pukul {{ surat['kembali_pukul'] or '……' }} WIB{% else %}Belum diisi{% endif %}</dd>
+    <dt>Pengambilan O2</dt><dd>{{ surat['pengambilan_o2'] }}</dd>
+    <dt>Kronologi</dt><dd>{{ surat['kronologi'] }}</dd>
+    <dt>Waktu Terima Rujukan</dt><dd>{% if surat['terima_tanggal'] %}{{ surat['terima_tanggal']|tgl_indo }} · Pukul {{ surat['terima_pukul'] or '……' }} WIB di {{ surat['terima_rs'] }}{% else %}Belum diisi{% endif %}</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>Petugas yang Ditugaskan</h2>
+  <div class="tbl-wrap" style="border:0">
+  <table>
+    <thead><tr><th>No</th><th>Nama</th><th>NIP</th><th>Pangkat/Gol</th><th>Jabatan</th></tr></thead>
+    <tbody>
+    {% for p in petugas %}
+      <tr><td data-l="No">{{ loop.index }}</td><td data-l="Nama">{{ p['nama'] }}</td>
+      <td data-l="NIP">{{ p['nip'] or '-' }}</td><td data-l="Pangkat/Gol">{{ p['pangkat_gol'] or '-' }}</td>
+      <td data-l="Jabatan">{{ p['jabatan_di_surat'] }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+{% if surat['status']=='berangkat' %}
+<section>
+  <h2>Lengkapi Kepulangan (tutup surat → Selesai)</h2>
+  <form method="post" action="{{ url_for('surat_selesaikan', sid=surat['id']) }}">
+    <div class="grid">
+      <div><label>Kembali — Tanggal *</label><input type="date" name="kembali_tanggal" required value="{{ surat['kembali_tanggal'] or '' }}"></div>
+      <div><label>Kembali — Pukul</label><input type="time" name="kembali_pukul" value="{{ surat['kembali_pukul'] or '' }}"></div>
+      <div><label>Terima Rujukan — Tanggal *</label><input type="date" name="terima_tanggal" required></div>
+      <div><label>Terima Rujukan — Pukul</label><input type="time" name="terima_pukul"></div>
+      <div><label>RS Penerima</label><input name="terima_rs" value="{{ surat['rs_nama'] }}"></div>
+      <div><label>Nama Petugas Penerima</label><input name="terima_nama" placeholder="Petugas Penerima RS Tujuan"></div>
+    </div>
+    <div class="actions"><button class="btn-primary">Tutup Surat (Selesai)</button></div>
+  </form>
+</section>
+{% endif %}
+
+{% if surat['status'] in ('draft','berangkat') %}
+<section>
+  <h2>Batalkan Surat</h2>
+  <form method="post" action="{{ url_for('surat_batalkan', sid=surat['id']) }}">
+    <div class="grid">
+      <div class="full"><label>Alasan Pembatalan *</label><input name="alasan_batal" required placeholder="cth. Rujukan dibatalkan keluarga pasien"></div>
+    </div>
+    <div class="actions"><button class="btn-danger">Batalkan Surat</button></div>
+  </form>
+</section>
+{% endif %}
+
+<section>
+  <h2>Jejak Audit</h2>
+  {% for l in logs %}
+  <div class="tujuan-row"><span>{{ l['created_at'] }} · {{ l['aksi'] }} — {{ l['keterangan'] }}</span><b>{{ l['name'] or '' }}</b></div>
+  {% else %}
+  <div class="tujuan-row"><span>Belum ada catatan.</span></div>
+  {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Arsip Surat — SI Surat Tugas{% endblock %}
+{% block content %}
+<h1>Arsip Surat Tugas</h1>
+<div class="sub">Cari berdasarkan nomor surat atau nama pasien, saring berdasarkan status</div>
+
+<form method="get" class="grid" style="margin-bottom:14px">
+  <div><input name="q" value="{{ q }}" placeholder="🔍 Nomor surat / nama pasien…"></div>
+  <div style="display:flex;gap:10px">
+    <select name="status">
+      <option value="">Semua Status</option>
+      {% for k, v in STATUS_LABEL.items() %}
+      <option value="{{ k }}" {{ 'selected' if status==k }}>{{ v }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn-primary">Cari</button>
+  </div>
+</form>
+
+<div class="tbl-wrap">
+<table>
+  <thead><tr><th>Nomor</th><th>Tanggal</th><th>Pasien</th><th>Tujuan</th><th>Petugas</th><th>Status</th><th>Aksi</th></tr></thead>
+  <tbody>
+  {% for s in rows %}
+    <tr>
+      <td data-l="Nomor"><b>{{ s['nomor_surat'] }}</b></td>
+      <td data-l="Tanggal">{{ s['tanggal_surat']|tgl_indo }}</td>
+      <td data-l="Pasien">{{ s['nama_pasien'] }}</td>
+      <td data-l="Tujuan">{{ s['rs_nama'] }}</td>
+      <td data-l="Petugas">{{ petugas[s['id']]|map(attribute='nama')|join(' · ') }}</td>
+      <td data-l="Status"><span class="badge b-{{ s['status'] }}">{{ STATUS_LABEL[s['status']] }}</span></td>
+      <td data-l="Aksi"><a class="mini" href="{{ url_for('surat_detail', sid=s['id']) }}">Lihat</a>
+        {% if s['status']!='dibatalkan' %}<a class="mini" href="{{ url_for('surat_pdf', sid=s['id']) }}" target="_blank">Cetak PDF</a>{% endif %}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7">Tidak ada surat yang cocok.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

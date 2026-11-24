@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Data Master {{ cfg.judul }} — SI Surat Tugas{% endblock %}
+{% block content %}
+<h1>Data Master</h1>
+<div class="sub">
+  {% for j, c in {'pegawai':'Pegawai','kendaraan':'Kendaraan','rs':'RS Tujuan','dokter':'Dokter'}.items() %}
+    <a class="mini" href="{{ url_for('master', jenis=j) }}" style="{{ 'font-weight:700' if jenis==j }}">{{ c }}</a>
+  {% endfor %}
+</div>
+
+<section>
+  <h2>Tambah {{ cfg.judul }}</h2>
+  <form method="post">
+    <div class="grid">
+      {% for key, label in cfg.kolom %}
+      <div><label>{{ label }} {{ '*' if loop.first }}</label>
+        <input name="{{ key }}" {{ 'required' if loop.first }} {% if key=='jarak_km' %}inputmode="decimal" placeholder="cth. 237,3"{% endif %}></div>
+      {% endfor %}
+    </div>
+    <div class="actions"><button class="btn-primary">Tambah</button></div>
+  </form>
+</section>
+
+<div class="tbl-wrap">
+<table>
+  <thead><tr>{% for key, label in cfg.kolom %}<th>{{ label }}</th>{% endfor %}<th>Status</th><th>Aksi</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      {% for key, label in cfg.kolom %}<td data-l="{{ label }}">{{ r[key] }}</td>{% endfor %}
+      <td data-l="Status">{{ 'Aktif' if r['is_active'] else 'Nonaktif' }}</td>
+      <td data-l="Aksi">
+        <form method="post" action="{{ url_for('master_toggle', jenis=jenis, mid=r['id']) }}" style="display:inline">
+          {% if r['is_active'] %}
+          <button class="btn-del">Nonaktifkan</button>
+          {% else %}
+          <button class="btn-primary" style="padding:5px 10px;font-size:12px">Aktifkan</button>
+          {% endif %}
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="{{ cfg.kolom|length + 2 }}">Belum ada data.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<div class="hint" style="margin-top:8px">Data dinonaktifkan, bukan dihapus — surat lama yang memakai data ini tidak berubah (snapshot).</div>
+{% endblock %}

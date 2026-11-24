@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if surat else 'Buat' }} Surat Tugas — SI Surat Tugas{% endblock %}
+{% block content %}
+<h1>{{ 'Edit Draft Surat Tugas' if surat else 'Buat Surat Tugas Ambulance' }}</h1>
+<div class="sub">Status: <span class="badge b-draft">DRAFT</span> · Nomor surat diisi <b>manual</b> — sistem memeriksa tidak kosong &amp; tidak duplikat</div>
+
+<form method="post" id="formSurat">
+  <section>
+    <h2>A. Surat</h2>
+    <div class="grid">
+      <div>
+        <label>Nomor Surat * (diisi manual)</label>
+        <input name="nomor_surat" required placeholder="000.1.2/045" value="{{ surat['nomor_surat'] if surat else '' }}">
+        <div class="hint">Ketik persis seperti di buku agenda, contoh: 000.1.2/045</div>
+      </div>
+      <div><label>Tanggal Surat</label>
+        <input type="date" name="tanggal_surat" value="{{ surat['tanggal_surat'] if surat else '' }}"></div>
+      <div class="full"><label>Penandatangan</label>
+        <select name="penandatangan_id">
+          {% for p in penandatangan %}
+          <option value="{{ p['id'] }}" {{ 'selected' if surat and surat['penandatangan_id']==p['id'] }}>{{ p['nama'] }} — {{ p['jabatan_baris_2'] }} (NIP {{ p['nip'] }})</option>
+          {% endfor %}
+        </select></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>B. Dasar Rujukan</h2>
+    <div class="grid">
+      <div><label>Tanggal Surat Rujukan *</label>
+        <input type="date" name="dasar_tanggal_rujukan" value="{{ surat['dasar_tanggal_rujukan'] if surat else '' }}"></div>
+      <div><label>Dokter yang Merujuk *</label>
+        <select name="dokter_id">
+          {% for d in dokter %}<option value="{{ d['id'] }}" {{ 'selected' if surat and surat['dokter_id']==d['id'] }}>{{ d['nama'] }}</option>{% endfor %}
+        </select></div>
+      <div><label>Nama Pasien *</label>
+        <input name="nama_pasien" required value="{{ surat['nama_pasien'] if surat else '' }}"></div>
+      <div><label>No. KP. JKA *</label>
+        <input name="no_kp_jka" value="{{ surat['no_kp_jka'] if surat else '' }}"></div>
+      <div class="full"><label>Sub / Spesialis</label>
+        <input name="sub_spesialis" value="{{ surat['sub_spesialis'] if surat else 'Instalasi Gawat Darurat (IGD)' }}"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>C. Petugas yang Ditugaskan</h2>
+    <div id="petugasList"></div>
+    <button type="button" class="btn-add" onclick="tambahPetugas()">+ Tambah Petugas</button>
+  </section>
+
+  <section>
+    <h2>D. Perjalanan</h2>
+    <div class="grid">
+      <div><label>Kendaraan *</label>
+        <select name="kendaraan_id">
+          {% for k in kendaraan %}<option value="{{ k['id'] }}" {{ 'selected' if surat and surat['kendaraan_id']==k['id'] }}>{{ k['jenis'] }} — {{ k['nomor_polisi'] }}</option>{% endfor %}
+        </select></div>
+      <div><label>Tujuan Rujukan *</label>
+        <select name="rs_tujuan_id" id="rsTujuan" onchange="isiJarak()">
+          {% for r in rs %}<option value="{{ r['id'] }}" data-jarak="{{ ('%g'|format(r['jarak_km'])).replace('.', ',') }}" {{ 'selected' if surat and surat['rs_tujuan_id']==r['id'] }}>{{ r['nama_rs'] }}{% if r['kota'] %} — {{ r['kota'] }}{% endif %}</option>{% endfor %}
+        </select></div>
+      <div><label>Jarak Tempuh (Km)</label>
+        <input name="jarak_km" id="jarak" value="{{ ('%g'|format(surat['jarak_km'])).replace('.', ',') if surat and surat['jarak_km'] is not none else '' }}">
+        <div class="hint">Terisi otomatis dari data master RS, masih bisa diubah. Pakai koma untuk desimal.</div></div>
+      <div><label>Pengambilan O2 di IPSRS</label>
+        <input name="pengambilan_o2" value="{{ surat['pengambilan_o2'] if surat else '6 M3 / Tabung' }}"></div>
+      <div><label>Berangkat — Tanggal *</label>
+        <input type="date" name="berangkat_tanggal" value="{{ surat['berangkat_tanggal'] if surat else '' }}"></div>
+      <div><label>Berangkat — Pukul *</label>
+        <input type="time" name="berangkat_pukul" value="{{ surat['berangkat_pukul'] if surat else '' }}"></div>
+      <div><label>Kembali — Tanggal</label>
+        <input type="date" name="kembali_tanggal" value="{{ surat['kembali_tanggal'] if surat else '' }}">
+        <div class="hint">Boleh kosong — dilengkapi saat surat ditutup (Selesai).</div></div>
+      <div><label>Kembali — Pukul</label>
+        <input type="time" name="kembali_pukul" value="{{ surat['kembali_pukul'] if surat else '' }}"></div>
+      <div class="full"><label>Kronologi Kejadian (bila ada)</label>
+        <textarea name="kronologi" rows="2">{{ surat['kronologi'] if surat else 'hati-hati dalam perjalanan utamakan keselamatan' }}</textarea></div>
+    </div>
+  </section>
+
+  <div class="actions">
+    <button class="btn-primary" type="submit">{{ 'Simpan Perubahan Draft' if surat else 'Simpan sebagai Draft' }}</button>
+    <a class="btn btn-ghost" href="{{ url_for('surat_detail', sid=surat['id']) if surat else url_for('dashboard') }}">Batal</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const PEGAWAI = [
+    {% for p in pegawai %}{id:{{ p['id'] }}, nama:{{ p['nama']|tojson }}, nip:{{ (p['nip'] or '')|tojson }}, pangkat:{{ (p['pangkat_gol'] or '')|tojson }}, jabatan:{{ (p['jabatan_default'] or '')|tojson }}}{{ "," if not loop.last }}
+    {% endfor %}
+  ];
+  const JABATAN = ["Sopir Ambulance", "Perawat / Pendamping Pasien", "Dokter Pendamping"];
+  const AWAL = [
+    {% for pt in petugas %}{pegawai_id:{{ pt['pegawai_id'] }}, jabatan:{{ pt['jabatan_di_surat']|tojson }}}{{ "," if not loop.last }}
+    {% endfor %}
+  ];
+  let urutan = 0;
+  function tambahPetugas(preset){
+    urutan++;
+    const selId = preset ? preset.pegawai_id : (PEGAWAI[(urutan-1) % PEGAWAI.length] || {}).id;
+    const jabatan = preset ? preset.jabatan : JABATAN[Math.min(urutan-1, 2)];
+    const div = document.createElement("div");
+    div.className = "petugas";
+    div.innerHTML = `
+      <div class="petugas-head"><span>Petugas ${urutan}</span>
+      <button type="button" class="btn-del" onclick="this.closest('.petugas').remove()">Hapus</button></div>
+      <div class="grid">
+        <div><label>Nama *</label><select name="pegawai_id" onchange="isiPegawai(this)">
+          ${PEGAWAI.map(x=>`<option value="${x.id}" ${x.id===selId?'selected':''}>${x.nama}</option>`).join("")}
+        </select></div>
+        <div><label>Jabatan di Surat</label><select name="jabatan_di_surat">
+          ${JABATAN.map(j=>`<option ${j===jabatan?'selected':''}>${j}</option>`).join("")}
+          ${JABATAN.includes(jabatan)?'':`<option selected>${jabatan}</option>`}
+        </select></div>
+        <div><label>NIP</label><input readonly class="nip" value=""></div>
+        <div><label>Pangkat / Gol</label><input readonly class="pangkat" value=""></div>
+      </div>`;
+    document.getElementById("petugasList").appendChild(div);
+    isiPegawai(div.querySelector("select[name=pegawai_id]"));
+  }
+  function isiPegawai(sel){
+    const p = PEGAWAI.find(x=>x.id===+sel.value) || {};
+    const box = sel.closest(".petugas");
+    box.querySelector(".nip").value = p.nip || "";
+    box.querySelector(".pangkat").value = p.pangkat || "";
+  }
+  function isiJarak(){
+    const opt = document.getElementById("rsTujuan").selectedOptions[0];
+    if (opt) document.getElementById("jarak").value = opt.dataset.jarak || "";
+  }
+  if (AWAL.length) { AWAL.forEach(p=>tambahPetugas(p)); }
+  else { tambahPetugas(); tambahPetugas(); }
+  if (!document.querySelector("input[name=tanggal_surat]").value) {
+    const t = new Date().toISOString().slice(0,10);
+    document.querySelector("input[name=tanggal_surat]").value = t;
+    document.querySelector("input[name=dasar_tanggal_rujukan]").value = t;
+    document.querySelector("input[name=berangkat_tanggal]").value = t;
+  }
+  if (!document.getElementById("jarak").value) isiJarak();
+</script>
+{% endblock %}

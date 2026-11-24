@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Pengaturan — SI Surat Tugas{% endblock %}
+{% block content %}
+<h1>Pengaturan</h1>
+<div class="sub">Penandatangan surat, QR tanda tangan, dan akun pengguna — hanya Admin</div>
+
+<section>
+  <h2>Penandatangan Surat</h2>
+  <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="aksi" value="penandatangan">
+    <div class="grid">
+      <div><label>Nama</label><input name="nama" value="{{ ptd['nama'] }}"></div>
+      <div><label>NIP</label><input name="nip" value="{{ ptd['nip'] }}"></div>
+      <div><label>Jabatan Baris 1</label><input name="jabatan_baris_1" value="{{ ptd['jabatan_baris_1'] }}"></div>
+      <div><label>Jabatan Baris 2</label><input name="jabatan_baris_2" value="{{ ptd['jabatan_baris_2'] }}"></div>
+      <div class="full"><label>Gambar QR Tanda Tangan (kosongkan bila tidak ganti)</label>
+        <input type="file" name="qr_ttd" accept="image/*">
+        {% if ptd['qr_ttd_path'] %}<div class="hint">QR saat ini: {{ ptd['qr_ttd_path'] }}</div>
+        {% else %}<div class="hint">Belum ada upload — PDF memakai QR dari template contoh.</div>{% endif %}
+      </div>
+    </div>
+    <div class="actions"><button class="btn-primary">Simpan Penandatangan</button></div>
+  </form>
+</section>
+
+<section>
+  <h2>Tambah Pengguna</h2>
+  <form method="post">
+    <input type="hidden" name="aksi" value="user_baru">
+    <div class="grid">
+      <div><label>Nama</label><input name="name" required></div>
+      <div><label>Username *</label><input name="username" required></div>
+      <div><label>Password *</label><input name="password" type="password" required></div>
+      <div><label>Peran</label>
+        <select name="role"><option value="koordinator">Koordinator</option><option value="admin">Admin</option></select></div>
+    </div>
+    <div class="actions"><button class="btn-primary">Tambah Pengguna</button></div>
+  </form>
+</section>
+
+<div class="tbl-wrap">
+<table>
+  <thead><tr><th>Nama</th><th>Username</th><th>Peran</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for u in users %}
+    <tr><td data-l="Nama">{{ u['name'] }}</td><td data-l="Username">{{ u['username'] }}</td>
+    <td data-l="Peran">{{ 'Admin' if u['role']=='admin' else 'Koordinator' }}</td>
+    <td data-l="Status">{{ 'Aktif' if u['is_active'] else 'Nonaktif' }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

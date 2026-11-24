@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — SI Surat Tugas{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+<div class="sub">{{ tanggal_hari_ini }} · Ringkasan surat tugas ambulance bulan ini</div>
+
+<div class="stats">
+  <div class="stat"><span class="ico">📄</span><div class="num">{{ stats.total }}</div><div class="lbl">Total Surat Bulan Ini</div></div>
+  <div class="stat"><span class="ico">🚑</span><div class="num">{{ stats.berangkat }}</div><div class="lbl">Sedang Berangkat</div></div>
+  <div class="stat"><span class="ico">✅</span><div class="num">{{ stats.selesai }}</div><div class="lbl">Selesai Bulan Ini</div></div>
+  <div class="stat"><span class="ico">📝</span><div class="num">{{ stats.draft }}</div><div class="lbl">Masih Draft</div></div>
+</div>
+
+{% if belum_lengkap %}
+<div class="alert"><b>Perlu dilengkapi:</b> {{ belum_lengkap|length }} surat berstatus <b>Berangkat</b> belum diisi tanggal kembali &amp; waktu terima rujukan:
+  {% for s in belum_lengkap %}
+    <a href="{{ url_for('surat_detail', sid=s['id']) }}">{{ s['nomor_surat'] }}</a>{{ ", " if not loop.last }}
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="cols">
+  <div class="panel">
+    <h3>Rujukan 7 Hari Terakhir</h3>
+    <div class="bars">
+      {% for h in hari %}
+      <div class="bar"><b>{{ h.count }}</b><i style="height:{{ h.pct }}%"></i><span>{{ h.label }}</span></div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Tujuan Terbanyak Bulan Ini</h3>
+    {% for t in tujuan %}
+    <div class="tujuan-row"><span>{{ t['rs_nama'] }}</span><b>{{ t['c'] }}</b></div>
+    {% else %}
+    <div class="tujuan-row"><span>Belum ada data bulan ini</span></div>
+    {% endfor %}
+    <div style="margin-top:14px"><a class="btn btn-primary" href="{{ url_for('surat_baru') }}">+ Buat Surat Tugas</a></div>
+  </div>
+</div>
+
+<div class="panel" style="padding:16px 18px 6px">
+  <h3>Surat Terakhir</h3>
+  <div class="tbl-wrap" style="border:0">
+  <table>
+    <thead><tr><th>Nomor</th><th>Tanggal</th><th>Pasien</th><th>Tujuan</th><th>Status</th><th>Aksi</th></tr></thead>
+    <tbody>
+    {% for s in terakhir %}
+      <tr>
+        <td data-l="Nomor"><b>{{ s['nomor_surat'] }}</b></td>
+        <td data-l="Tanggal">{{ s['tanggal_surat']|tgl_indo }}</td>
+        <td data-l="Pasien">{{ s['nama_pasien'] }}</td>
+        <td data-l="Tujuan">{{ s['rs_nama'] }}</td>
+        <td data-l="Status"><span class="badge b-{{ s['status'] }}">{{ STATUS_LABEL[s['status']] }}</span></td>
+        <td data-l="Aksi"><a class="mini" href="{{ url_for('surat_detail', sid=s['id']) }}">Lihat</a>
+          <a class="mini" href="{{ url_for('surat_pdf', sid=s['id']) }}" target="_blank">Cetak PDF</a></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6">Belum ada surat.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}
